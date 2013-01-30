@@ -73,6 +73,19 @@ declare AvailableCollectible
     collectible : Collectible
 end
 
+query isSafe(Node $node)
+    not Positioned(x == $node.x, y == $node.y)
+    (
+        not (Positioned(x == $node.x - 1, y == $node.y))
+        or
+        not (Positioned(x == $node.x + 1, y == $node.y))
+        or
+        not (Positioned(x == $node.x, y == $node.y - 1))
+        or
+        not (Positioned(x == $node.x, y == $node.y + 1))
+    )
+end
+
 rule "Determine current position of a player"
 salience 50
 when
@@ -140,69 +153,75 @@ then
     retract($target);
 end
 
-rule "Determine random target - left"
-when
-    not Target()
-    CurrentPosition($x: node.getX(), $y: node.getY())
-    not Positioned(x == $x - 1, y == $y)
-then
-    insert(new Target(Node.getNode($x - 1, $y), null));
-end
-
-rule "Determine random target - right"
-when
-    not Target()
-    CurrentPosition($x: node.getX(), $y: node.getY())
-    not Positioned(x == $x + 1, y == $y)
-then
-    insert(new Target(Node.getNode($x + 1, $y), null));
-end
-
-rule "Determine random target - up"
-when
-    not Target()
-    CurrentPosition($x: node.getX(), $y: node.getY())
-    not Positioned(x == $x, y == $y + 1)
-then
-    insert(new Target(Node.getNode($x, $y + 1), null));
-end
-
-rule "Determine random target - down"
-when
-    not Target()
-    CurrentPosition($x: node.getX(), $y: node.getY())
-    not Positioned(x == $x, y == $y - 1)
-then
-    insert(new Target(Node.getNode($x, $y - 1), null));
-end
-
 rule "Choose next step for collectible target"
+salience 10
 when
     $target: Target($targetNode: node, collectible != null)
     CurrentPosition($startNode: node, node != $targetNode)
     Path($startNode == startNode, $targetNode == endNode, $path: edges)
 then
-    List<Edge> path = tracker.getPath($startNode, $targetNode);
-    if (path.isEmpty()) {
+    if ($path.isEmpty()) {
         retract($target);
     } else {
-        final Edge edge = path.get(0);
+        final Edge edge = (Edge) $path.get(0);
         final Node nextNode = edge.getNodes().getLeft() != $startNode ? 
                                 edge.getNodes().getLeft() : edge.getNodes().getRight();
         insertLogical(new NextStep(nextNode));
     }
 end
 
-rule "Choose next step for random target"
+rule "Next non-random step must be safe"
+salience 10
 when
-    $target: Target($targetNode: node, collectible == null)
-    CurrentPosition($startNode: node, node != $targetNode)
+    $target: Target(collectible != null)
+    $nextStep: NextStep($nextNode: node)
+    not ?isSafe($nextNode;)
 then
-    // $targetNode is just next to $startNode
-    insertLogical(new NextStep($targetNode));
+    retract($nextStep);
+    retract($target);
 end
 
-rule "Determine whether a position to the left is available to be moved into"
+rule "Determine random move - left"
+when
+    not Target()
+    CurrentPosition($x: node.getX(), $y: node.getY())
+    $nextNode : Node() from Node.getNode($x - 1, $y)
+    ?isSafe($nextNode;)
+then
+    insertLogical(new NextStep($nextNode));
+end
+
+rule "Determine random move - right"
+when
+    not Target()
+    CurrentPosition($x: node.getX(), $y: node.getY())
+    $nextNode : Node() from Node.getNode($x + 1, $y)
+    ?isSafe($nextNode;)
+then
+    insertLogical(new NextStep($nextNode));
+end
+
+rule "Determine random move - up"
+when
+    not Target()
+    CurrentPosition($x: node.getX(), $y: node.getY())
+    $nextNode : Node() from Node.getNode($x, $y + 1)
+    ?isSafe($nextNode;)
+then
+    insertLogical(new NextStep($nextNode));
+end
+
+rule "Determine random move - down"
+when
+    not Target()
+    CurrentPosition($x: node.getX(), $y: node.getY())
+    $nextNode : Node() from Node.getNode($x, $y - 1)
+    ?isSafe($nextNode;)
+then
+    insertLogical(new NextStep($nextNode));
+end
+
+rule "Determine whether next move is to the left"
 when
     NextStep($nextX: node.getX(), $nextY: node.getY())
     CurrentPosition($nextX < node.getX())
@@ -211,7 +230,7 @@ then
     insertLogical( Move.LEFT );
 end
 
-rule "Determine whether a position to the right is available to be moved into"
+rule "Determine whether next move is to the right"
 when
     NextStep($nextX: node.getX(), $nextY: node.getY())
     CurrentPosition($nextX > node.getX())
@@ -220,7 +239,7 @@ then
     insertLogical( Move.RIGHT );
 end
 
-rule "Determine whether a position to the up is available to be moved into"
+rule "Determine whether next move is up"
 when
     NextStep($nextX: node.getX(), $nextY: node.getY())
     CurrentPosition($nextY > node.getY())
@@ -229,7 +248,7 @@ then
     insertLogical( Move.UP );
 end
 
-rule "Determine whether a position to the down is available to be moved into"
+rule "Determine whether next move is down"
 when
     NextStep($nextX: node.getX(), $nextY: node.getY())
     CurrentPosition($nextY < node.getY())

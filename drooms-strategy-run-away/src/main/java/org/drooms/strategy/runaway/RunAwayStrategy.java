@@ -27,14 +27,8 @@ public class RunAwayStrategy implements Strategy {
                 .newKnowledgeBuilderConfiguration(null, cls);
         final KnowledgeBuilder kb = KnowledgeBuilderFactory
                 .newKnowledgeBuilder(conf);
-        //kb.add(ResourceFactory.newClassPathResource("structures.drl",
-        //        cls), ResourceType.DRL);
         kb.add(ResourceFactory.newClassPathResource("basic_move_rules.drl",
                 cls), ResourceType.DRL);
-        //kb.add(ResourceFactory.newClassPathResource("collectibles.drl",
-        //        cls), ResourceType.DRL);
-        //kb.add(ResourceFactory.newClassPathResource("opponents.drl",
-        //        cls), ResourceType.DRL);
 
         if (kb.hasErrors()) {
             for (KnowledgeBuilderError error : kb.getErrors()) {
