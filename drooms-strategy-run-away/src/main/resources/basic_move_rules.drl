@@ -134,11 +134,10 @@ end
 rule "Target reached"
 salience 20
 when
-    $target: Target($targetNode : node, $collectible: collectible)
+    $target: Target($targetNode : node)
     CurrentPosition($targetNode == node)
 then
     retract($target);
-    if ($collectible != null) retract($collectible);
 end
 
 rule "Determine random target - left"
@@ -177,9 +176,9 @@ then
     insert(new Target(Node.getNode($x, $y - 1), null));
 end
 
-rule "Choose next step"
+rule "Choose next step for collectible target"
 when
-    $target: Target($targetNode: node)
+    $target: Target($targetNode: node, collectible != null)
     CurrentPosition($startNode: node, node != $targetNode)
     Path($startNode == startNode, $targetNode == endNode, $path: edges)
 then
@@ -192,6 +191,15 @@ then
                                 edge.getNodes().getLeft() : edge.getNodes().getRight();
         insertLogical(new NextStep(nextNode));
     }
+end
+
+rule "Choose next step for random target"
+when
+    $target: Target($targetNode: node, collectible == null)
+    CurrentPosition($startNode: node, node != $targetNode)
+then
+    // $targetNode is just next to $startNode
+    insertLogical(new NextStep($targetNode));
 end
 
 rule "Determine whether a position to the left is available to be moved into"
