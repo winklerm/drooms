@@ -42,4 +42,9 @@ public class RunAwayStrategy implements Strategy {
     public String getName() {
         return "Run Away!";
     }
+
+    @Override
+    public boolean enableAudit() {
+        return true;
+    }
 }

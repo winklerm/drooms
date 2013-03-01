@@ -5,7 +5,7 @@
   <parent>
     <groupId>com.github.triceo.drooms</groupId>
     <artifactId>drooms</artifactId>
-    <version>0.3-SNAPSHOT</version>
+    <version>0.9.Final</version>
   </parent>
   <artifactId>drooms-strategy-run-away</artifactId>
   <name>Drooms Strategy: Run Away</name>
